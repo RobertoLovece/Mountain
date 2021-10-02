@@ -24,6 +24,8 @@
     "webpack-dev-server": "^3.11.2"
   },
   "dependencies": {
+    "controls-gui": "^2.0.0",
+    "controls-state": "^2.0.0",
     "normalize.css": "^8.0.1",
     "three": "^0.131.3"
   }

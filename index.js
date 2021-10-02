@@ -112,10 +112,8 @@ const material = new THREE.ShaderMaterial({
 })
 
 
-
 const plane = new THREE.Mesh(geometry, material)
 webgl.scene.add(plane)
-
 
 // LIGHTS
 const directionalLight = new THREE.DirectionalLight(0xffffff, 0.6)

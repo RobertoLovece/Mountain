@@ -1,1 +1,1 @@
-# Three.js-Calc-Normals-After-Displacement
+# Three.js-Normal-Displacement

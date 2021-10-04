@@ -1,290 +1,305 @@
 import * as THREE from 'three';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import Stats from 'three/examples/jsm/libs/stats.module.js';
-import State from 'controls-state'
-import wrapGUI from 'controls-gui'
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
 //
 
-import { noise, monkeyPatch, fbm } from './src/utilities/util.js';
+import vertexShader from './src/mountain/vertexShader.glsl';
+import fragmentShader from './src/mountain/fragmentShader.glsl';
 
 //
 
 require('normalize.css/normalize.css');
 require("./src/css/index.css");
 
-// init three.js
-const webgl = initWebGLApp()
+//
 
-// init stats.js
-const stats = initStats()
+let scene, camera, renderer;
+let container, plane, geometry, material;
+let stats, clock, controls;
+let hemiLight, directionalLight, spotLight;
 
-// init the controls-state panel
-const controls = initControls({
-    diffuse: '#5B82A6',
-    roughness: 0.5,
-    noise: {
-        amplitude: 0.4,
-        frequency: State.Slider(0.5, { max: 2 }),
-        speed: State.Slider(0.3, { max: 2 }),
-    }
-})
+//
 
+window.onload = function () {
 
-const SIZE = 4
-const RESOLUTION = 256
+    initScene();
 
-const geometry = new THREE.PlaneBufferGeometry(SIZE, SIZE, RESOLUTION, RESOLUTION).rotateX(-Math.PI / 2)
+    initStats();
+    initObjects();
+    initControls();
 
-const material = new THREE.ShaderMaterial({
-    lights: true,
-    side: THREE.DoubleSide,
-    extensions: {
-        derivatives: true,
-    },
+    onWindowResize();
+    animate();
 
-    defines: {
-        STANDARD: '',
-        PHYSICAL: '',
-    },
-
-    uniforms: {
-        ...THREE.ShaderLib.physical.uniforms,
-        ...controls.toUniforms,
-        ...controls.noise.toUniforms,
-        time: { value: 0 },
-    },
-
-    vertexShader: monkeyPatch(THREE.ShaderChunk.meshphysical_vert, {
-        header: `
-      uniform float time;
-      uniform float amplitude;
-      uniform float speed;
-      uniform float frequency;
-
-      ${noise()}
-      ${fbm()}
-      
-      // the function which defines the displacement
-      float displace(vec3 point) {
-        // return noise(vec3(point.x * frequency, point.z * frequency, time * speed)) * amplitude;
-        return fbm(point.xy);
-      }
-      
-      // http://lolengine.net/blog/2013/09/21/picking-orthogonal-vector-combing-coconuts
-      vec3 orthogonal(vec3 v) {
-        return normalize(abs(v.x) > abs(v.z) ? vec3(-v.y, v.x, 0.0)
-        : vec3(0.0, -v.z, v.y));
-      }
-    `,
-        // adapted from http://tonfilm.blogspot.com/2007/01/calculate-normals-in-shader.html
-        main: `
-      vec3 displacedPosition = position + normal * vec3(1.0, displace(position), 1.0);
-
-
-      float offset = ${SIZE / RESOLUTION};
-      vec3 tangent = orthogonal(normal);
-      vec3 bitangent = normalize(cross(normal, tangent));
-      vec3 neighbour1 = position + tangent * offset;
-      vec3 neighbour2 = position + bitangent * offset;
-      vec3 displacedNeighbour1 = neighbour1 + normal * displace(neighbour1);
-      vec3 displacedNeighbour2 = neighbour2 + normal * displace(neighbour2);
-
-      // https://i.ya-webdesign.com/images/vector-normals-tangent-16.png
-      vec3 displacedTangent = displacedNeighbour1 - displacedPosition;
-      vec3 displacedBitangent = displacedNeighbour2 - displacedPosition;
-
-      // https://upload.wikimedia.org/wikipedia/commons/d/d2/Right_hand_rule_cross_product.svg
-      vec3 displacedNormal = normalize(cross(displacedTangent, displacedBitangent));
-    `,
-
-        '#include <defaultnormal_vertex>': THREE.ShaderChunk.defaultnormal_vertex.replace(
-            // transformedNormal will be used in the lighting calculations
-            'vec3 transformedNormal = objectNormal;',
-            `vec3 transformedNormal = displacedNormal;`
-        ),
-
-        // transformed is the output position
-        '#include <displacementmap_vertex>': `
-      transformed = displacedPosition;
-    `,
-    }),
-
-    fragmentShader: THREE.ShaderChunk.meshphysical_frag,
-})
-
-
-const plane = new THREE.Mesh(geometry, material)
-webgl.scene.add(plane)
-
-// LIGHTS
-const directionalLight = new THREE.DirectionalLight(0xffffff, 0.6)
-directionalLight.position.set(-0.5, 10, -10)
-webgl.scene.add(directionalLight)
-
-const ambientLight = new THREE.AmbientLight(0xffffff, 0.3)
-webgl.scene.add(ambientLight)
-
-
-function update(ms) {
-    const time = ms * 0.001
-    stats.begin()
-
-    // update the time uniform
-    plane.material.uniforms.time.value = time
-
-
-    webgl.render()
-    webgl.orbitControls.update()
-
-    stats.end()
-    requestAnimationFrame(update)
 }
-requestAnimationFrame(update)
 
-//------------------------
-// BOILERPLATE BELOW
-//------------------------
+//
 
-function initWebGLApp() {
-    const canvas = document.createElement('canvas')
-    document.body.appendChild(canvas)
+function initScene() {
 
-    const renderer = new THREE.WebGLRenderer({
-        canvas,
-        alpha: true,
-        antialias: true,
-    })
+    scene = new THREE.Scene();
 
-    renderer.setClearColor('#111', 1)
+    container = document.getElementById('body');
 
-    const fov = 45
-    const near = 0.01
-    const far = 100
-    const camera = new THREE.PerspectiveCamera(fov, 1, near, far)
+    var width = container.offsetWidth;
+    var height = container.offsetHeight;
 
-    // move the camera back
-    camera.position.set(-2, 3, 5)
+    camera = new THREE.PerspectiveCamera(
+        75,
+        width / height,
+        0.1,
+        1000
+    );
 
-    const scene = new THREE.Scene()
+    renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
 
-    const orbitControls = new OrbitControls(camera, renderer.domElement)
-    orbitControls.enableDamping = true
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setSize(width, height);
 
-    function resize() {
-        const width = window.innerWidth
-        const height = window.innerHeight
+    container.appendChild(renderer.domElement);
 
-        renderer.setSize(width, height)
-        renderer.setPixelRatio(window.devicePixelRatio) // 2 in case of retinas
+    camera.position.set(0, 1, 1);
 
-        if (camera.isPerspectiveCamera) {
-            camera.aspect = width / height
-        }
-        camera.updateProjectionMatrix()
-    }
+    // hemiLight = new THREE.HemisphereLight(0xffeeb1, 0x080820, 4);
+    // scene.add(hemiLight);
 
-    function render() {
-        renderer.render(scene, camera)
-    }
+    renderer.toneMapping = THREE.ReinhardToneMapping;
+    renderer.toneMappingExposure = 1.2;
+    renderer.shadowMap.enabled = true;
 
-    // initial resize and render
-    resize()
-    render()
+    spotLight = new THREE.SpotLight(0xffa95c, 4);
+    spotLight.castShadow = true;
+    spotLight.shadow.bias = -0.0001;
+    spotLight.shadow.mapSize = new THREE.Vector2(1024*4,1024*4);
+    scene.add(spotLight);
 
-    // add resize listener
-    window.addEventListener('resize', resize)
-
-    return {
-        canvas,
-        renderer,
-        camera,
-        orbitControls,
-        scene,
-        resize,
-        render,
-    }
 }
+
+//
 
 function initStats() {
-    const stats = new Stats()
-    stats.showPanel(0)
-    document.body.appendChild(stats.dom)
-    return stats
+
+    var axesHelper = new THREE.AxesHelper(5);
+    scene.add(axesHelper);
+
+    stats = new Stats();
+    document.body.appendChild(stats.dom);
+
+    clock = new THREE.Clock();
+
 }
 
+//
 
-function initControls(controlsObject, options = {}) {
-    const controls = wrapGUI(State(controlsObject), { expanded: !options.closeControls })
+function initObjects() {
 
-    // add the custom controls-gui styles
-    const styles = `
-    [class^="controlPanel-"] [class*="__field"]::before {
-      content: initial !important;
+    const SIZE = 3;
+    const RESOLUTION = 256 * 2;
+
+    geometry = new THREE.PlaneBufferGeometry(SIZE, SIZE, RESOLUTION, RESOLUTION);
+
+    // material = new THREE.MeshStandardMaterial({
+    //     side: THREE.FrontSide,
+    //     // wireframe: true,
+    // });
+    material = new THREE.MeshNormalMaterial({
+        side: THREE.FrontSide,
+        // wireframe: true,
+    });
+
+    material.onBeforeCompile = shader => {
+        console.log(shader.vertexShader)
+        shader.vertexShader = shader.vertexShader.replace(
+            'void main() {',
+            `
+            // float random (in vec2 st) {
+            //     return fract(sin(dot(st.xy,
+            //                          vec2(12.9898,78.233)))*
+            //         43758.5453123);
+            // }
+            float random (in vec2 st) {
+                return fract(sin(dot(st.xy,
+                                     vec2(12.9898,78.233)))*
+                    43758.5453123);
+            }
+
+            // Based on Morgan McGuire @morgan3d
+            // https://www.shadertoy.com/view/4dS3Wd
+            float noise (in vec2 st) {
+                vec2 i = floor(st);
+                vec2 f = fract(st);
+            
+                // Four corners in 2D of a tile
+                float a = random(i);
+                float b = random(i + vec2(1.0, 0.0));
+                float c = random(i + vec2(0.0, 1.0));
+                float d = random(i + vec2(1.0, 1.0));
+            
+                vec2 u = f * f * (vec2(3.0) - 2.0 * f);
+            
+                return mix(a, b, u.x) +
+                        (c - a)* u.y * (1.0 - u.x) +
+                        (d - b) * u.x * u.y;
+            }
+            
+            #define OCTAVES 50
+            float fbm (in vec2 st) {
+                // Initial values
+            
+                float value = 0.0;
+                float amplitude = .5;
+                float frequency = 1.;
+            
+                // Loop of octaves
+                for (int i = 0; i < OCTAVES; i++) {
+                    value += amplitude * abs(noise(st));
+                    st *= 2.;
+                    amplitude *= .5;
+                }
+            
+                return value;
+            }  
+            
+            // the function which defines the displacement
+            float displace(vec3 point) {
+                return fbm(point.xy);
+            }
+
+            vec3 orthogonal(vec3 v) {
+                return normalize(abs(v.x) > abs(v.z) ? vec3(-v.y, v.x, 0.0)
+                : vec3(0.0, -v.z, v.y));
+            }
+            
+            void main() {
+                vec3 displacedPosition = vec3(position.x, position.y, displace(position));
+
+                float offset = ${SIZE / RESOLUTION};
+                vec3 tangent = orthogonal(normal);
+                vec3 bitangent = normalize(cross(normal, tangent));
+                vec3 neighbour1 = position + tangent * offset;
+                vec3 neighbour2 = position + bitangent * offset;
+                vec3 displacedNeighbour1 = vec3(neighbour1.x, neighbour1.y, displace(neighbour1));
+                vec3 displacedNeighbour2 = vec3(neighbour2.x, neighbour2.y, displace(neighbour2));
+          
+                // https://i.ya-webdesign.com/images/vector-normals-tangent-16.png
+                vec3 displacedTangent = displacedNeighbour1 - displacedPosition;
+                vec3 displacedBitangent = displacedNeighbour2 - displacedPosition;
+          
+                // https://upload.wikimedia.org/wikipedia/commons/d/d2/Right_hand_rule_cross_product.svg
+                vec3 displacedNormal = normalize(cross(displacedTangent, displacedBitangent));
+            
+            `
+        )
+
+        shader.vertexShader = shader.vertexShader.replace(
+            '#include <defaultnormal_vertex>',
+            `vec3 transformedNormal = displacedNormal;
+            
+            #ifdef USE_INSTANCING
+	        // this is in lieu of a per-instance normal-matrix
+	        // shear transforms in the instance matrix are not supported
+	        mat3 m = mat3( instanceMatrix );
+	        transformedNormal /= vec3( dot( m[ 0 ], m[ 0 ] ), dot( m[ 1 ], m[ 1 ] ), dot( m[ 2 ], m[ 2 ] ) );
+	        transformedNormal = m * transformedNormal;
+            #endif
+            
+transformedNormal = normalMatrix * transformedNormal;
+#ifdef FLIP_SIDED
+	transformedNormal = - transformedNormal;
+#endif
+#ifdef USE_TANGENT
+	vec3 transformedTangent = ( modelViewMatrix * vec4( objectTangent, 0.0 ) ).xyz;
+	#ifdef FLIP_SIDED
+		transformedTangent = - transformedTangent;
+	#endif
+#endif`
+        )
+
+        shader.vertexShader = shader.vertexShader.replace(
+            '#include <displacementmap_vertex>',
+            `transformed = displacedPosition;`
+        )
+
+        console.log(shader.vertexShader)
     }
-    [class^="controlPanel-"] [class*="__labelText"] {
-      text-indent: 6px !important;
-    }
-    [class^="controlPanel-"] [class*="__field--button"] > button::before {
-      content: initial !important;
-    }
-    `
 
-    const style = document.createElement('style')
-    style.type = 'text/css'
-    style.innerHTML = styles
-    document.head.appendChild(style)
+    plane = new THREE.Mesh(geometry, material);
+    scene.add(plane);
 
-    // add .toUniforms property to be used in materials
-    Object.keys(controlsObject).forEach((key) => {
-        if (controls[key].$field?.type !== 'section') {
-            return
-        }
+    plane.castShadows = true;
+    plane.recieveShadows = true;
 
-        const section = controls[key]
+    plane.rotation.set(-Math.PI / 2, 0, 0);
+    plane.scale.set(1.2, 1.2, 2);
+    geometry.computeFaceNormals();
+    console.log(geometry.attributes.normal);
 
-        // make it non-enumerable
-        Object.defineProperty(section, 'toUniforms', {
-            value: {},
-        })
-
-        Object.keys(section).forEach((property) => {
-            section.toUniforms[property] = { value: section[property] }
-        })
-
-        section.$onChange((event) => {
-            section.toUniforms[event.name].value = event.value
-        })
-    })
-
-
-    // add .toUniforms property at the root level
-    Object.defineProperty(controls, 'toUniforms', {
-        value: {},
-    })
-
-    Object.keys(controlsObject).forEach((key) => {
-        if (controls[key].$field?.type === 'section') {
-            return
-        }
-
-        // support only colors and numbers for now
-        const value = typeof controls[key] === 'string' ? new THREE.Color(controls[key]) : controls[key]
-
-        controls.toUniforms[key] = { value }
-    })
-
-    controls.$onChange((event) => {
-        // return if it's a child
-        if (event.fullPath.includes('.')) {
-            return
-        }
-
-        // support only colors and numbers for now
-        const value = typeof event.value === 'string' ? new THREE.Color(event.value) : event.value
-
-        controls.toUniforms[event.name].value = value
-    })
-
-    return controls
 }
+
+//
+
+function initControls() {
+
+    controls = new OrbitControls(camera, renderer.domElement);
+
+    controls.enablePan = true;
+    controls.enableZoom = true;
+    controls.enableRotate = true;
+
+}
+
+//
+
+function animate() {
+    requestAnimationFrame(animate);
+
+    stats.update();
+
+    spotLight.position.set(
+        camera.position.x + 1,
+        camera.position.y + 1,
+        camera.position.z + 1,
+    );
+
+    renderer.render(scene, camera);
+    controls.update();
+}
+
+//
+
+// Event Listeners
+window.addEventListener('resize', onWindowResize, false);
+window.addEventListener('onmousemove', onMouseMove, false);
+window.addEventListener('click', onClick, false);
+
+//
+
+function onWindowResize() {
+    container = document.getElementById('body');
+
+    var width = container.offsetWidth;
+    var height = container.offsetHeight;
+
+    camera.aspect = width / height;
+    camera.updateProjectionMatrix();
+
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setSize(width, height);
+
+}
+
+//
+
+function onMouseMove(e) {
+    //console.log();
+}
+
+//
+
+function onClick(e) {
+    // console.log(material.shader);
+}
+
+//
+

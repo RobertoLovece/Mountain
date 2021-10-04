@@ -6,7 +6,7 @@ import wrapGUI from 'controls-gui'
 
 //
 
-import { noise, monkeyPatch } from './src/utilities/util.js';
+import { noise, monkeyPatch, fbm } from './src/utilities/util.js';
 
 //
 
@@ -63,10 +63,12 @@ const material = new THREE.ShaderMaterial({
       uniform float frequency;
 
       ${noise()}
+      ${fbm()}
       
       // the function which defines the displacement
       float displace(vec3 point) {
-        return noise(vec3(point.x * frequency, point.z * frequency, time * speed)) * amplitude;
+        // return noise(vec3(point.x * frequency, point.z * frequency, time * speed)) * amplitude;
+        return fbm(point.xy);
       }
       
       // http://lolengine.net/blog/2013/09/21/picking-orthogonal-vector-combing-coconuts
@@ -77,7 +79,7 @@ const material = new THREE.ShaderMaterial({
     `,
         // adapted from http://tonfilm.blogspot.com/2007/01/calculate-normals-in-shader.html
         main: `
-      vec3 displacedPosition = position + normal * displace(position);
+      vec3 displacedPosition = position + normal * vec3(1.0, displace(position), 1.0);
 
 
       float offset = ${SIZE / RESOLUTION};

@@ -19,7 +19,7 @@ import mapFragment from './src/shader/map_fragment.glsl';
 // import Rock from './src/texture/Rock-Cliff-1K.png';
 // import Rock from './src/texture/Rock-Cliff-Snow-1K.png';
 import Rock from './src/texture/Rock-Cliff-Volcanic-4K.png';
-import Cloth from './src/texture/fabric_85_basecolor-1K.png';
+// import Cloth from './src/texture/fabric_85_basecolor-1K.png';
 
 //
 
@@ -41,7 +41,7 @@ let hemiLight, directionalLight, spotLight;
 
 const loader = new THREE.TextureLoader();
 const rock = loader.load(Rock);
-const cloth = loader.load(Cloth);
+// const cloth = loader.load(Cloth);
 
 //
 

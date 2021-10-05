@@ -6,7 +6,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "webpack serve --open",
-    "build": "webpack"
+    "build": "webpack",
+    "deploy": "gh-pages -d dist"
   },
   "keywords": [],
   "author": "",
@@ -26,6 +27,7 @@
   "dependencies": {
     "controls-gui": "^2.0.0",
     "controls-state": "^2.0.0",
+    "gh-pages": "^3.2.3",
     "normalize.css": "^8.0.1",
     "three": "^0.131.3"
   }

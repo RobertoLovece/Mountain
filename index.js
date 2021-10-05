@@ -152,7 +152,7 @@ function initObjects() {
     rock.anisotropy = renderer.capabilities.getMaxAnisotropy();
 
     material = new THREE.MeshStandardMaterial({
-        side: THREE.DoubleSide,
+        side: THREE.FrontSide,
         map: rock,
         // roughness: 0.4,
         // map: cloth,

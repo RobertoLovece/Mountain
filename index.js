@@ -85,8 +85,6 @@ function initScene() {
 
     container.appendChild(renderer.domElement);
 
-    camera.position.set(0, 1, 1);
-
 }
 
 //
@@ -234,6 +232,10 @@ function initControls() {
     controls.enableZoom = true;
     controls.enableRotate = true;
 
+    // camera.lookAt(0, 0, 0);
+    controls.target = new THREE.Vector3(0, 1.1, 0);
+    camera.position.set(-0.7, 1.6, -0.3);
+
 }
 
 //
@@ -288,7 +290,8 @@ function onMouseMove(e) {
 //
 
 function onClick(e) {
-    console.log(material.shader);
+    console.log(camera.position);
+    console.log(controls.target);
 }
 
 //

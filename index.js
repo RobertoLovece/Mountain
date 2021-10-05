@@ -2,11 +2,24 @@ import * as THREE from 'three';
 import Stats from 'three/examples/jsm/libs/stats.module.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
+// composer
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
+import { SMAAPass } from 'three/examples/jsm/postprocessing/SMAAPass.js';
+
 //
 
 import vertexShader from './src/shader/vertexShader.glsl';
 import defaultNormalVertex from './src/shader/defaultnormal_vertex.glsl';
-import fragmentShader from './src/shader/fragmentShader.glsl';
+import mapFragment from './src/shader/map_fragment.glsl';
+
+//
+
+// import Rock from './src/texture/rock.png';
+// import Rock from './src/texture/Rock-Cliff-1K.png';
+// import Rock from './src/texture/Rock-Cliff-Snow-1K.png';
+import Rock from './src/texture/Rock-Cliff-Volcanic-4K.png';
+import Cloth from './src/texture/fabric_85_basecolor-1K.png';
 
 //
 
@@ -26,14 +39,22 @@ let hemiLight, directionalLight, spotLight;
 
 //
 
+const loader = new THREE.TextureLoader();
+const rock = loader.load(Rock);
+const cloth = loader.load(Cloth);
+
+//
+
 window.onload = function () {
 
     initScene();
+    initLights();
+
+    initPostProcessing();
 
     initStats();
     initObjects();
     initControls();
-
     onWindowResize();
     animate();
 
@@ -66,18 +87,44 @@ function initScene() {
 
     camera.position.set(0, 1, 1);
 
-    // hemiLight = new THREE.HemisphereLight(0xffeeb1, 0x080820, 4);
-    // scene.add(hemiLight);
+}
+
+//
+
+function initLights() {
 
     renderer.toneMapping = THREE.ReinhardToneMapping;
-    renderer.toneMappingExposure = 1.2;
+    // renderer.toneMapping = THREE.ACESFilmicToneMapping; //decent with exposure of 0.3 darker
+    renderer.toneMappingExposure = 0.8;
     renderer.shadowMap.enabled = true;
+
+    // hemiLight = new THREE.HemisphereLight(0xffeeb1, 0x080820, 4); //orange
+    hemiLight = new THREE.HemisphereLight(0x9db4ff, 0xedeeff, 4); // blue
+    // hemiLight = new THREE.HemisphereLight(0xFF4C4C, 0x4c0000, 4); // red
+    scene.add(hemiLight);
 
     spotLight = new THREE.SpotLight(0xffa95c, 4);
     spotLight.castShadow = true;
     spotLight.shadow.bias = -0.0001;
     spotLight.shadow.mapSize = new THREE.Vector2(1024*4,1024*4);
     scene.add(spotLight);
+}
+
+//
+
+function initPostProcessing() {
+
+    composer = new EffectComposer(renderer);
+
+    var renderPass = new RenderPass(scene, camera);
+
+    var smaaPass = new SMAAPass( window.innerWidth * renderer.getPixelRatio(), window.innerHeight * renderer.getPixelRatio() );
+
+    renderPass.renderToScreen = false;
+    smaaPass.renderToScreen = true;
+
+    composer.addPass(renderPass);
+    composer.addPass(smaaPass);
 
 }
 
@@ -100,12 +147,17 @@ function initStats() {
 function initObjects() {
 
     const SIZE = 3;
-    const RESOLUTION = 1024;
+    const RESOLUTION = 256 * 4;
 
     geometry = new THREE.PlaneBufferGeometry(SIZE, SIZE, RESOLUTION, RESOLUTION);
 
-    material = new THREE.MeshNormalMaterial({
-        side: THREE.FrontSide,
+    rock.anisotropy = renderer.capabilities.getMaxAnisotropy();
+
+    material = new THREE.MeshStandardMaterial({
+        side: THREE.DoubleSide,
+        map: rock,
+        // roughness: 0.4,
+        // map: cloth,
         // wireframe: true,
     });
 
@@ -113,6 +165,9 @@ function initObjects() {
 
         // for debugging uncomment the top and bottom logs to see what glsl is injected
         // into the default planes shaders
+
+        // vertex shader
+
         // console.log(shader.vertexShader)
 
         // uniforms
@@ -140,6 +195,22 @@ function initObjects() {
         )
 
         // console.log(shader.vertexShader)
+
+        // fragment shader
+
+        // console.log(shader.fragmentShader);
+
+        shader.uniforms.snowAmount = { value: 0.3 };
+        shader.fragmentShader = (
+            'uniform float snowAmount;\n' + 
+            shader.fragmentShader
+        );
+
+        shader.fragmentShader = shader.fragmentShader.replace(
+            '#include <map_fragment>', 
+            mapFragment
+        );
+
     }
 
     plane = new THREE.Mesh(geometry, material);
@@ -178,7 +249,8 @@ function animate() {
         camera.position.z + 1,
     );
 
-    renderer.render(scene, camera);
+    // renderer.render(scene, camera);
+    composer.render(scene, camera);
     controls.update();
 }
 
@@ -202,6 +274,8 @@ function onWindowResize() {
 
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(width, height);
+    composer.setPixelRatio(window.devicePixelRatio);
+    composer.setSize(width, height);
 
 }
 
@@ -214,7 +288,7 @@ function onMouseMove(e) {
 //
 
 function onClick(e) {
-    // console.log(material.shader);
+    console.log(material.shader);
 }
 
 //

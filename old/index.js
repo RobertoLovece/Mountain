@@ -1,293 +1,256 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import Stats from 'three/examples/jsm/libs/stats.module.js';
-import State from 'controls-state'
-import wrapGUI from 'controls-gui'
-
-//
-
-import { noise, monkeyPatch, fbm } from '../src/utilities/util.js';
 
 //
 
 require('normalize.css/normalize.css');
-require("./src/css/index.css");
+require("../src/css/index.css");
+var seedrandom = require('seedrandom');
 
-// init three.js
-const webgl = initWebGLApp()
+//
 
-// init stats.js
-const stats = initStats()
+let scene, camera, renderer;
+let controls, container;
+let stats;
+let geometry, material, mesh;
+let count = 0;
 
-// init the controls-state panel
-const controls = initControls({
-    diffuse: '#5B82A6',
-    roughness: 0.5,
-    noise: {
-        amplitude: 0.4,
-        frequency: State.Slider(0.5, { max: 2 }),
-        speed: State.Slider(0.3, { max: 2 }),
-    }
-})
+//
 
+window.onload = function () {
 
-const SIZE = 4
-const RESOLUTION = 256
+    initScene();
+    initStats();
 
-const geometry = new THREE.PlaneBufferGeometry(SIZE, SIZE, RESOLUTION, RESOLUTION).rotateX(-Math.PI / 2)
+    initObjects();
+    initControls();
 
-const material = new THREE.ShaderMaterial({
-    lights: true,
-    side: THREE.DoubleSide,
-    extensions: {
-        derivatives: true,
-    },
+    animate();
 
-    defines: {
-        STANDARD: '',
-        PHYSICAL: '',
-    },
-
-    uniforms: {
-        ...THREE.ShaderLib.physical.uniforms,
-        ...controls.toUniforms,
-        ...controls.noise.toUniforms,
-        time: { value: 0 },
-    },
-
-    vertexShader: monkeyPatch(THREE.ShaderChunk.meshphysical_vert, {
-        header: `
-      uniform float time;
-      uniform float amplitude;
-      uniform float speed;
-      uniform float frequency;
-
-      ${noise()}
-      ${fbm()}
-      
-      // the function which defines the displacement
-      float displace(vec3 point) {
-        return noise(vec3(point.x * frequency, point.z * frequency, time * speed)) * amplitude;
-        // return fbm(point.xy);
-      }
-      
-      // http://lolengine.net/blog/2013/09/21/picking-orthogonal-vector-combing-coconuts
-      vec3 orthogonal(vec3 v) {
-        return normalize(abs(v.x) > abs(v.z) ? vec3(-v.y, v.x, 0.0)
-        : vec3(0.0, -v.z, v.y));
-      }
-    `,
-        // adapted from http://tonfilm.blogspot.com/2007/01/calculate-normals-in-shader.html
-        main: `
-      //vec3 displacedPosition = position + normal * vec3(displace(position));
-      vec3 displacedPosition = vec3(position.x, displace(position), position.z);
-
-
-      float offset = ${SIZE / RESOLUTION};
-      vec3 tangent = orthogonal(normal);
-      vec3 bitangent = normalize(cross(normal, tangent));
-      vec3 neighbour1 = position + tangent * offset;
-      vec3 neighbour2 = position + bitangent * offset;
-    //   vec3 displacedNeighbour1 = neighbour1 + normal * displace(neighbour1);
-    //   vec3 displacedNeighbour2 = neighbour2 + normal * displace(neighbour2);
-      vec3 displacedNeighbour1 = vec3(neighbour1.x, displace(neighbour1), neighbour1.z);
-      vec3 displacedNeighbour2 = vec3(neighbour2.x, displace(neighbour2), neighbour2.z);
-
-      // https://i.ya-webdesign.com/images/vector-normals-tangent-16.png
-      vec3 displacedTangent = displacedNeighbour1 - displacedPosition;
-      vec3 displacedBitangent = displacedNeighbour2 - displacedPosition;
-
-      // https://upload.wikimedia.org/wikipedia/commons/d/d2/Right_hand_rule_cross_product.svg
-      vec3 displacedNormal = normalize(cross(displacedTangent, displacedBitangent));
-    `,
-
-        '#include <defaultnormal_vertex>': THREE.ShaderChunk.defaultnormal_vertex.replace(
-            // transformedNormal will be used in the lighting calculations
-            'vec3 transformedNormal = objectNormal;',
-            `vec3 transformedNormal = displacedNormal;`
-        ),
-
-        // transformed is the output position
-        '#include <displacementmap_vertex>': `
-      transformed = displacedPosition;
-    `,
-    }),
-
-    fragmentShader: THREE.ShaderChunk.meshphysical_frag,
-})
-
-
-const plane = new THREE.Mesh(geometry, material)
-webgl.scene.add(plane)
-
-// LIGHTS
-const directionalLight = new THREE.DirectionalLight(0xffffff, 0.6)
-directionalLight.position.set(-0.5, 10, -10)
-webgl.scene.add(directionalLight)
-
-const ambientLight = new THREE.AmbientLight(0xffffff, 0.3)
-webgl.scene.add(ambientLight)
-
-
-function update(ms) {
-    const time = ms * 0.001
-    stats.begin()
-
-    // update the time uniform
-    plane.material.uniforms.time.value = time
-
-
-    webgl.render()
-    webgl.orbitControls.update()
-
-    stats.end()
-    requestAnimationFrame(update)
 }
-requestAnimationFrame(update)
 
-//------------------------
-// BOILERPLATE BELOW
-//------------------------
+//
 
-function initWebGLApp() {
-    const canvas = document.createElement('canvas')
-    document.body.appendChild(canvas)
+function initScene() {
 
-    const renderer = new THREE.WebGLRenderer({
-        canvas,
-        alpha: true,
-        antialias: true,
-    })
+    scene = new THREE.Scene();
 
-    renderer.setClearColor('#111', 1)
+    container = document.getElementById('body');
 
-    const fov = 45
-    const near = 0.01
-    const far = 100
-    const camera = new THREE.PerspectiveCamera(fov, 1, near, far)
+    var width = container.offsetWidth;
+    var height = container.offsetHeight;
 
-    // move the camera back
-    camera.position.set(-2, 3, 5)
+    camera = new THREE.PerspectiveCamera(
+        75,
+        width / height,
+        0.1,
+        1000
+    );
 
-    const scene = new THREE.Scene()
+    renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
 
-    const orbitControls = new OrbitControls(camera, renderer.domElement)
-    orbitControls.enableDamping = true
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setSize(width, height);
 
-    function resize() {
-        const width = window.innerWidth
-        const height = window.innerHeight
+    container.appendChild(renderer.domElement);
 
-        renderer.setSize(width, height)
-        renderer.setPixelRatio(window.devicePixelRatio) // 2 in case of retinas
+    camera.position.z = 5;
+    camera.position.x = 4;
+    camera.position.y = 3;
+    camera.lookAt(0, 0, 0)
 
-        if (camera.isPerspectiveCamera) {
-            camera.aspect = width / height
-        }
-        camera.updateProjectionMatrix()
-    }
-
-    function render() {
-        renderer.render(scene, camera)
-    }
-
-    // initial resize and render
-    resize()
-    render()
-
-    // add resize listener
-    window.addEventListener('resize', resize)
-
-    return {
-        canvas,
-        renderer,
-        camera,
-        orbitControls,
-        scene,
-        resize,
-        render,
-    }
 }
+
+//
 
 function initStats() {
-    const stats = new Stats()
-    stats.showPanel(0)
-    document.body.appendChild(stats.dom)
-    return stats
+
+    var axesHelper = new THREE.AxesHelper(5);
+    scene.add(axesHelper);
+
+    stats = new Stats();
+    document.body.appendChild(stats.dom);
+
 }
 
+//
 
-function initControls(controlsObject, options = {}) {
-    const controls = wrapGUI(State(controlsObject), { expanded: !options.closeControls })
+function initObjects() {
 
-    // add the custom controls-gui styles
-    const styles = `
-    [class^="controlPanel-"] [class*="__field"]::before {
-      content: initial !important;
+    geometry = new THREE.PlaneBufferGeometry(5, 5, 256 * 4, 256 * 4).rotateZ(-Math.PI/2);
+    // modify geometry
+
+    var positionAttribute = geometry.attributes.position;
+    console.log(positionAttribute);
+
+    for (var i = 0; i < positionAttribute.count; i++) {
+
+        // access single vertex (x,y,z)
+
+        var x = positionAttribute.getX(i);
+        var y = positionAttribute.getY(i);
+        var z = positionAttribute.getZ(i);
+        
+        // console.log(x + ", " + y)
+        let n = fractalBrownianMotion(new THREE.Vector2(x,y));
+        z = n;
+
+        positionAttribute.setXYZ(i, x, y, z);
+
     }
-    [class^="controlPanel-"] [class*="__labelText"] {
-      text-indent: 6px !important;
+    
+    //
+
+    geometry.computeVertexNormals();
+
+    //
+
+    material = new THREE.MeshNormalMaterial({
+        side: THREE.DoubleSide, 
+    });
+
+    mesh = new THREE.Mesh(geometry, material);
+    scene.add(mesh);
+    mesh.rotation.set(-Math.PI/2 , 0, 0);
+
+}
+
+//
+
+function fractalBrownianMotion(vec2) {
+
+    const OCTAVES = 10;
+
+    var amplitude = 1.5;
+    var frequency = 1.0;
+    
+    var value = 0.0;
+
+    for (let i = 0; i < OCTAVES ; i++) {
+
+        // console.log(vec2.x + ", " + vec2.y + " : " + count)
+        value = value + (amplitude * Math.abs(noise(vec2)));
+
+        vec2.multiplyScalar(2.0);
+
+        amplitude *= 0.5;
+
+        count++;
     }
-    [class^="controlPanel-"] [class*="__field--button"] > button::before {
-      content: initial !important;
-    }
-    `
+    
+    return value;
+}
 
-    const style = document.createElement('style')
-    style.type = 'text/css'
-    style.innerHTML = styles
-    document.head.appendChild(style)
+//
 
-    // add .toUniforms property to be used in materials
-    Object.keys(controlsObject).forEach((key) => {
-        if (controls[key].$field?.type !== 'section') {
-            return
-        }
+function noise(vec2) {
 
-        const section = controls[key]
+    let x = vec2.x;
+    let y = vec2.y;
 
-        // make it non-enumerable
-        Object.defineProperty(section, 'toUniforms', {
-            value: {},
-        })
+    // i floor(vec2)
+    let i = vec2.clone().floor();
+    // console.log(i)
 
-        Object.keys(section).forEach((property) => {
-            section.toUniforms[property] = { value: section[property] }
-        })
+    // f fract(vec2)
+    let f = new THREE.Vector2(
+        x - i.x,
+        y - i.y
+    );
 
-        section.$onChange((event) => {
-            section.toUniforms[event.name].value = event.value
-        })
-    })
+    // // Four corners in 2D of a tile
+    let a = random(i.x, i.y);
+    let b = random(i.x + 1, i.y);
+    let c = random(i.x, i.y + 1);
+    let d = random(i.x + 1, i.y + 1);
+    // Four corners in 2D of a tile
 
+    // console.log(a + ", " + b + ", " + c + ", " + d);
 
-    // add .toUniforms property at the root level
-    Object.defineProperty(controls, 'toUniforms', {
-        value: {},
-    })
+    // f^2
+    let fSquared = f.clone().multiply( f.clone() );
 
-    Object.keys(controlsObject).forEach((key) => {
-        if (controls[key].$field?.type === 'section') {
-            return
-        }
+    let f2 = f.clone().multiplyScalar( 2.0 );
+    let fEnd = new THREE.Vector2().subVectors( 
+        new THREE.Vector2(3.0, 3.0), f2
+    );
 
-        // support only colors and numbers for now
-        const value = typeof controls[key] === 'string' ? new THREE.Color(controls[key]) : controls[key]
+    // (u = f * f * (3.0 - 2.0 * f))
+    let u = fSquared.multiply(fEnd);
 
-        controls.toUniforms[key] = { value }
-    })
+    // mix(a, b, u.x) +
+    //         (c - a)* u.y * (1.0 - u.x) +
+    //         (d - b) * u.x * u.y;
+    // mix(a, b, u.x) = a * (1 - u.x) + b * u.x
+    let mix = (a * (1 - u.x)) + (b * u.x);
+    let final = mix + ((c - a) * u.y * (1.0 - u.x) + ((d - b) * u.x * u.y));
 
-    controls.$onChange((event) => {
-        // return if it's a child
-        if (event.fullPath.includes('.')) {
-            return
-        }
+    return final;
+};
 
-        // support only colors and numbers for now
-        const value = typeof event.value === 'string' ? new THREE.Color(event.value) : event.value
+//
 
-        controls.toUniforms[event.name].value = value
-    })
+function random(x, y) {
 
-    return controls
+    let dot = (x * 12.9898) + (y * 78.233);
+
+    // console.log(dot)
+    let sin = Math.sin((dot * 43750.5453123));
+
+    let fract = sin - Math.floor(sin);
+
+    return fract;
+
+}
+
+//
+
+function initControls() {
+
+    controls = new OrbitControls(camera, renderer.domElement);
+
+    controls.enablePan = true;
+    controls.enableZoom = true;
+    controls.enableRotate = true;
+
+}
+
+//
+
+function animate() {
+    requestAnimationFrame(animate);
+
+    controls.update();
+    stats.update();
+
+    renderer.render(scene, camera);
+}
+
+//
+// EVENT LISTENERS
+//
+
+window.addEventListener('resize', onWindowResize, false);
+window.addEventListener('click', onClick, false);
+
+//
+
+function onWindowResize() {
+    container = document.getElementById('body');
+
+    var width = container.offsetWidth;
+    var height = container.offsetHeight;
+
+    camera.aspect = width / height;
+    camera.updateProjectionMatrix();
+
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setSize(width, height);
+}
+
+//
+
+function onClick(e) {
+    console.log(geometry.attributes.position);
 }

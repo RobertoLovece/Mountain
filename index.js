@@ -15,11 +15,16 @@ import mapFragment from './src/shader/map_fragment.glsl';
 
 //
 
-// import Rock from './src/texture/rock.png';
-// import Rock from './src/texture/Rock-Cliff-1K.png';
-// import Rock from './src/texture/Rock-Cliff-Snow-1K.png';
-import Rock from './src/texture/Rock-Cliff-Volcanic-2K.png';
-// import Cloth from './src/texture/fabric_85_basecolor-1K.png';
+import Rock from './src/texture/volcanic/base/Rock-Cliff-Volcanic-1K.png';
+import RockAO from './src/texture/volcanic/ao/Rock-Cliff-Volcanic-1K-ao.png';
+import RockHeight from './src/texture/volcanic/height/Rock-Cliff-Volcanic-1K-height.png';
+import RockNormal from './src/texture/volcanic/normal/Rock-Cliff-Volcanic-1K-normal.png';
+import RockRoughness from './src/texture/volcanic/roughness/Rock-Cliff-Volcanic-1K-roughness.png';
+
+//
+
+import Snow from './src/texture/snow/dunes/Snow-Dunes-1K.png';
+// import Snow from './src/texture/snow/cliff/Rock-Cliff-Snow-1K.png';
 
 //
 
@@ -40,8 +45,14 @@ let hemiLight, directionalLight, spotLight;
 //
 
 const loader = new THREE.TextureLoader();
+
 const rock = loader.load(Rock);
-// const cloth = loader.load(Cloth);
+const rockAO = loader.load(RockAO);
+const rockHeight = loader.load(RockHeight);
+const rockNormal = loader.load(RockNormal);
+const rockRoughness = loader.load(RockRoughness);
+
+const snow = loader.load(Snow)
 
 //
 
@@ -93,7 +104,7 @@ function initLights() {
 
     renderer.toneMapping = THREE.ReinhardToneMapping;
     // renderer.toneMapping = THREE.ACESFilmicToneMapping; //decent with exposure of 0.3 darker
-    renderer.toneMappingExposure = 0.8;
+    renderer.toneMappingExposure = 1.0;
     renderer.shadowMap.enabled = true;
 
     // hemiLight = new THREE.HemisphereLight(0xffeeb1, 0x080820, 4); //orange
@@ -145,17 +156,21 @@ function initStats() {
 function initObjects() {
 
     const SIZE = 3;
-    const RESOLUTION = 256 * 2;
+    const RESOLUTION = 256 * 2.0;
 
     geometry = new THREE.PlaneBufferGeometry(SIZE, SIZE, RESOLUTION, RESOLUTION);
 
     rock.anisotropy = renderer.capabilities.getMaxAnisotropy();
 
+    // rock, rockAO, rockHeight, rockNormal, rockRoughness 
     material = new THREE.MeshStandardMaterial({
         side: THREE.FrontSide,
         map: rock,
-        // roughness: 0.4,
-        // map: cloth,
+        aoMap: rockAO,
+        displacementMap: rockHeight,
+        normalMap: rockNormal, 
+        roughnessMap: rockRoughness,
+        roughness: 0.7,
         // wireframe: true,
     });
 
@@ -199,8 +214,11 @@ function initObjects() {
         // console.log(shader.fragmentShader);
 
         shader.uniforms.snowAmount = { value: 0.3 };
+        shader.uniforms.snowTexture = { type: "t", value: snow };
+
         shader.fragmentShader = (
             'uniform float snowAmount;\n' + 
+            'uniform sampler2D snowTexture;\n' + 
             shader.fragmentShader
         );
 
@@ -290,8 +308,9 @@ function onMouseMove(e) {
 //
 
 function onClick(e) {
-    console.log(camera.position);
-    console.log(controls.target);
+    // console.log(camera.position);
+    // console.log(controls.target);
+    console.log(geometry.attributes);
 }
 
 //

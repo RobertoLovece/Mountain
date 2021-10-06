@@ -61,8 +61,8 @@ void main() {
     vec3 bitangent = normalize(cross(normal, tangent));
     vec3 neighbour1 = position + tangent * offset;
     vec3 neighbour2 = position + bitangent * offset;
-    vec3 displacedNeighbour1 = vec3(neighbour1.x, neighbour1.y, displace(neighbour1));
-    vec3 displacedNeighbour2 = vec3(neighbour2.x, neighbour2.y, displace(neighbour2));
+    vec3 displacedNeighbour1 = vec3(neighbour1.xy, displace(neighbour1));
+    vec3 displacedNeighbour2 = vec3(neighbour2.xy, displace(neighbour2));
           
     // https://i.ya-webdesign.com/images/vector-normals-tangent-16.png
     vec3 displacedTangent = displacedNeighbour1 - displacedPosition;

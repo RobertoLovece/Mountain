@@ -6,7 +6,7 @@ module.exports = {
  	mode: 'development',
 
   	entry: {
-		index: './old/index.js',
+		index: './index.js',
 		//print: './src/print.js',
  	},
  	output: {

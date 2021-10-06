@@ -145,7 +145,7 @@ function initStats() {
 function initObjects() {
 
     const SIZE = 3;
-    const RESOLUTION = 256 * 4;
+    const RESOLUTION = 256 * 2;
 
     geometry = new THREE.PlaneBufferGeometry(SIZE, SIZE, RESOLUTION, RESOLUTION);
 
@@ -218,7 +218,7 @@ function initObjects() {
     plane.recieveShadows = true;
 
     plane.rotation.set(-Math.PI / 2, 0, 0);
-    plane.scale.set(1.2, 1.2, 2);
+    plane.scale.set(1.2, 1.2, 2.);
 
 }
 

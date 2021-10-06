@@ -18,7 +18,7 @@ import mapFragment from './src/shader/map_fragment.glsl';
 // import Rock from './src/texture/rock.png';
 // import Rock from './src/texture/Rock-Cliff-1K.png';
 // import Rock from './src/texture/Rock-Cliff-Snow-1K.png';
-import Rock from './src/texture/Rock-Cliff-Volcanic-4K.png';
+import Rock from './src/texture/Rock-Cliff-Volcanic-2K.png';
 // import Cloth from './src/texture/fabric_85_basecolor-1K.png';
 
 //

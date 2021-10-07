@@ -9,24 +9,17 @@ import { SMAAPass } from 'three/examples/jsm/postprocessing/SMAAPass.js';
 
 //
 
-import vertexShader from './src/shader/vertexShader.glsl';
-import defaultNormalVertex from './src/shader/defaultnormal_vertex.glsl';
-import mapFragment from './src/shader/map_fragment.glsl';
+import vertexShader from './src/mountain/shader/vertexShader.glsl';
+import defaultNormalVertex from './src/mountain/shader/defaultnormal_vertex.glsl';
+import mapFragment from './src/mountain/shader/map_fragment.glsl';
 
 //
 
-import Rock from './src/texture/volcanic/base/Rock-Cliff-Volcanic-1K.png';
-import RockAO from './src/texture/volcanic/ao/Rock-Cliff-Volcanic-1K-ao.png';
-import RockHeight from './src/texture/volcanic/height/Rock-Cliff-Volcanic-1K-height.png';
-import RockNormal from './src/texture/volcanic/normal/Rock-Cliff-Volcanic-1K-normal.png';
-import RockRoughness from './src/texture/volcanic/roughness/Rock-Cliff-Volcanic-1K-roughness.png';
+import {SIZE, RESOLUTIONX, RESOLUTIONZ} from './src/const.js'
 
 //
 
-import Snow from './src/texture/snow/dunes/Snow-Dunes-1K.png';
-// import Snow from './src/texture/snow/cliff/Rock-Cliff-Snow-1K.png';
-
-//
+import LoadTextures from './src/LoadTextures.js'
 
 require('normalize.css/normalize.css');
 require("./src/css/index.css");
@@ -36,27 +29,17 @@ require("./src/css/index.css");
 // scene
 let scene, camera, renderer, composer;
 // general
-let container, stats, clock, controls;
+let container, stats, clock, controls, textures;
 // objects
-let plane, geometry, material;
+let mountain, geometry, material;
 // lights
 let hemiLight, directionalLight, spotLight;
 
 //
 
-const loader = new THREE.TextureLoader();
-
-const rock = loader.load(Rock);
-const rockAO = loader.load(RockAO);
-const rockHeight = loader.load(RockHeight);
-const rockNormal = loader.load(RockNormal);
-const rockRoughness = loader.load(RockRoughness);
-
-const snow = loader.load(Snow)
-
-//
-
 window.onload = function () {
+
+    textures = new LoadTextures();
 
     initScene();
     initLights();
@@ -64,7 +47,7 @@ window.onload = function () {
     initPostProcessing();
 
     initStats();
-    initObjects();
+    initObjects(); // makes this execute after loadTextures
     initControls();
     onWindowResize();
     animate();
@@ -77,7 +60,7 @@ function initScene() {
 
     scene = new THREE.Scene();
 
-    container = document.getElementById('body');
+    container = document.getElementById('canvas');
 
     var width = container.offsetWidth;
     var height = container.offsetHeight;
@@ -115,7 +98,7 @@ function initLights() {
     spotLight = new THREE.SpotLight(0xffa95c, 4);
     spotLight.castShadow = true;
     spotLight.shadow.bias = -0.0001;
-    spotLight.shadow.mapSize = new THREE.Vector2(1024*4,1024*4);
+    spotLight.shadow.mapSize = new THREE.Vector2(1024*2,1024*2);
     scene.add(spotLight);
 }
 
@@ -155,21 +138,18 @@ function initStats() {
 
 function initObjects() {
 
-    const SIZE = 3;
-    const RESOLUTION = 256 * 2.0;
+    geometry = new THREE.PlaneBufferGeometry(SIZE, SIZE, RESOLUTIONX, RESOLUTIONZ);
 
-    geometry = new THREE.PlaneBufferGeometry(SIZE, SIZE, RESOLUTION, RESOLUTION);
-
-    rock.anisotropy = renderer.capabilities.getMaxAnisotropy();
+    textures.rock.anisotropy = renderer.capabilities.getMaxAnisotropy();
 
     // rock, rockAO, rockHeight, rockNormal, rockRoughness 
     material = new THREE.MeshStandardMaterial({
         side: THREE.FrontSide,
-        map: rock,
-        aoMap: rockAO,
-        displacementMap: rockHeight,
-        normalMap: rockNormal, 
-        roughnessMap: rockRoughness,
+        map: textures.rock,
+        aoMap: textures.rockAO,
+        displacementMap: textures.rockHeight,
+        normalMap: textures.rockNormal, 
+        roughnessMap: textures.rockRoughness,
         roughness: 0.7,
         // wireframe: true,
     });
@@ -185,7 +165,7 @@ function initObjects() {
 
         // uniforms
         shader.uniforms.size = { value: SIZE };
-        shader.uniforms.resolution = { value: RESOLUTION };
+        shader.uniforms.resolution = { value: RESOLUTIONX }; // does fact both aspects of RESOLUTION
         shader.vertexShader = (
             'uniform float size;\n' + 
             'uniform float resolution;\n' + 
@@ -214,7 +194,7 @@ function initObjects() {
         // console.log(shader.fragmentShader);
 
         shader.uniforms.snowAmount = { value: 0.3 };
-        shader.uniforms.snowTexture = { type: "t", value: snow };
+        shader.uniforms.snowTexture = { type: "t", value: textures.snow };
 
         shader.fragmentShader = (
             'uniform float snowAmount;\n' + 
@@ -227,16 +207,18 @@ function initObjects() {
             mapFragment
         );
 
+        // console.log(shader.fragmentShader);
+
     }
 
-    plane = new THREE.Mesh(geometry, material);
-    scene.add(plane);
+    mountain = new THREE.Mesh(geometry, material);
+    scene.add(mountain);
 
-    plane.castShadows = true;
-    plane.recieveShadows = true;
+    mountain.castShadows = true;
+    mountain.recieveShadows = true;
 
-    plane.rotation.set(-Math.PI / 2, 0, 0);
-    plane.scale.set(1.2, 1.2, 2.);
+    mountain.rotation.set(-Math.PI / 2, 0, 0);
+    mountain.scale.set(1.2, 1.2, 2.);
 
 }
 
@@ -284,7 +266,7 @@ window.addEventListener('click', onClick, false);
 //
 
 function onWindowResize() {
-    container = document.getElementById('body');
+    container = document.getElementById('canvas');
 
     var width = container.offsetWidth;
     var height = container.offsetHeight;
@@ -308,9 +290,8 @@ function onMouseMove(e) {
 //
 
 function onClick(e) {
-    // console.log(camera.position);
-    // console.log(controls.target);
-    console.log(geometry.attributes);
+    console.log("Camera Pos: " + camera.position.x + ", " + camera.position.y + ", " + camera.position.z)
+    console.log("Camera Looking: " + controls.target.x + ", " + controls.target.y + ", " + controls.target.z );
 }
 
 //

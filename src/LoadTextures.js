@@ -16,6 +16,7 @@ import Snow from './mountain/texture/snow/dunes/Snow-Dunes-1K.png';
 
 export default class LoadTextures {
     constructor() {
+
         const loader = new THREE.TextureLoader();
 
         this.rock = loader.load(Rock);
@@ -25,5 +26,6 @@ export default class LoadTextures {
         this.rockRoughness = loader.load(RockRoughness);
 
         this.snow = loader.load(Snow);
+        
     }
 }

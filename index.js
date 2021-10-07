@@ -7,19 +7,9 @@ import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { SMAAPass } from 'three/examples/jsm/postprocessing/SMAAPass.js';
 
-//
-
-import vertexShader from './src/mountain/shader/vertexShader.glsl';
-import defaultNormalVertex from './src/mountain/shader/defaultnormal_vertex.glsl';
-import mapFragment from './src/mountain/shader/map_fragment.glsl';
-
-//
-
-import {SIZE, RESOLUTIONX, RESOLUTIONZ} from './src/const.js'
-
-//
-
+// non libary js
 import LoadTextures from './src/LoadTextures.js'
+import Mountain from './src/mountain/mountain.js'
 
 require('normalize.css/normalize.css');
 require("./src/css/index.css");
@@ -31,7 +21,7 @@ let scene, camera, renderer, composer;
 // general
 let container, stats, clock, controls, textures;
 // objects
-let mountain, geometry, material;
+let mountain;
 // lights
 let hemiLight, directionalLight, spotLight;
 
@@ -47,7 +37,7 @@ window.onload = function () {
     initPostProcessing();
 
     initStats();
-    initObjects(); // makes this execute after loadTextures
+    initObjects(); // makes this execute after LoadTextures
     initControls();
     onWindowResize();
     animate();
@@ -138,87 +128,10 @@ function initStats() {
 
 function initObjects() {
 
-    geometry = new THREE.PlaneBufferGeometry(SIZE, SIZE, RESOLUTIONX, RESOLUTIONZ);
-
     textures.rock.anisotropy = renderer.capabilities.getMaxAnisotropy();
 
-    // rock, rockAO, rockHeight, rockNormal, rockRoughness 
-    material = new THREE.MeshStandardMaterial({
-        side: THREE.FrontSide,
-        map: textures.rock,
-        aoMap: textures.rockAO,
-        displacementMap: textures.rockHeight,
-        normalMap: textures.rockNormal, 
-        roughnessMap: textures.rockRoughness,
-        roughness: 0.7,
-        // wireframe: true,
-    });
-
-    material.onBeforeCompile = shader => {
-
-        // for debugging uncomment the top and bottom logs to see what glsl is injected
-        // into the default planes shaders
-
-        // vertex shader
-
-        // console.log(shader.vertexShader)
-
-        // uniforms
-        shader.uniforms.size = { value: SIZE };
-        shader.uniforms.resolution = { value: RESOLUTIONX }; // does fact both aspects of RESOLUTION
-        shader.vertexShader = (
-            'uniform float size;\n' + 
-            'uniform float resolution;\n' + 
-            shader.vertexShader
-        );
-
-        shader.vertexShader = shader.vertexShader.replace(
-            'void main() {',
-            vertexShader
-        )
-
-        shader.vertexShader = shader.vertexShader.replace(
-            '#include <defaultnormal_vertex>',
-            defaultNormalVertex
-        )
-
-        shader.vertexShader = shader.vertexShader.replace(
-            '#include <displacementmap_vertex>',
-            `transformed = displacedPosition;`
-        )
-
-        // console.log(shader.vertexShader)
-
-        // fragment shader
-
-        // console.log(shader.fragmentShader);
-
-        shader.uniforms.snowAmount = { value: 0.3 };
-        shader.uniforms.snowTexture = { type: "t", value: textures.snow };
-
-        shader.fragmentShader = (
-            'uniform float snowAmount;\n' + 
-            'uniform sampler2D snowTexture;\n' + 
-            shader.fragmentShader
-        );
-
-        shader.fragmentShader = shader.fragmentShader.replace(
-            '#include <map_fragment>', 
-            mapFragment
-        );
-
-        // console.log(shader.fragmentShader);
-
-    }
-
-    mountain = new THREE.Mesh(geometry, material);
+    mountain = new Mountain(textures);
     scene.add(mountain);
-
-    mountain.castShadows = true;
-    mountain.recieveShadows = true;
-
-    mountain.rotation.set(-Math.PI / 2, 0, 0);
-    mountain.scale.set(1.2, 1.2, 2.);
 
 }
 

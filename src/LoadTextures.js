@@ -17,15 +17,19 @@ import Snow from './mountain/texture/snow/dunes/Snow-Dunes-1K.png';
 export default class LoadTextures {
     constructor() {
 
-        const loader = new THREE.TextureLoader();
-
-        this.rock = loader.load(Rock);
-        this.rockAO = loader.load(RockAO);
-        this.rockHeight = loader.load(RockHeight);
-        this.rockNormal = loader.load(RockNormal);
-        this.rockRoughness = loader.load(RockRoughness);
-
-        this.snow = loader.load(Snow);
+        this.loader = new THREE.TextureLoader();
         
+    }
+    
+    load() {
+
+        this.rock = this.loader.load(Rock);
+        this.rockAO = this.loader.load(RockAO);
+        this.rockHeight = this.loader.load(RockHeight);
+        this.rockNormal = this.loader.load(RockNormal);
+        this.rockRoughness = this.loader.load(RockRoughness);
+
+        this.snow = this.loader.load(Snow);
+
     }
 }

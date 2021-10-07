@@ -31,16 +31,23 @@ window.onload = function () {
 
     textures = new LoadTextures();
 
+    const promises = [textures.load()];
+
     initScene();
     initLights();
-
     initPostProcessing();
-
-    initStats();
-    initObjects(); // makes this execute after LoadTextures
     initControls();
-    onWindowResize();
-    animate();
+    initStats();
+
+    // ensure textures are fully loaded
+    Promise.all(promises).then(() => {
+        initObjects();
+    
+        initEventListeners();
+        onWindowResize();
+
+        animate();
+    });
 
 }
 
@@ -82,13 +89,12 @@ function initLights() {
 
     // hemiLight = new THREE.HemisphereLight(0xffeeb1, 0x080820, 4); //orange
     hemiLight = new THREE.HemisphereLight(0x9db4ff, 0xedeeff, 4); // blue
-    // hemiLight = new THREE.HemisphereLight(0xFF4C4C, 0x4c0000, 4); // red
     scene.add(hemiLight);
 
     spotLight = new THREE.SpotLight(0xffa95c, 4);
     spotLight.castShadow = true;
     spotLight.shadow.bias = -0.0001;
-    spotLight.shadow.mapSize = new THREE.Vector2(1024*2,1024*2);
+    spotLight.shadow.mapSize = new THREE.Vector2(1024 * 2, 1024 * 2);
     scene.add(spotLight);
 }
 
@@ -100,7 +106,7 @@ function initPostProcessing() {
 
     var renderPass = new RenderPass(scene, camera);
 
-    var smaaPass = new SMAAPass( window.innerWidth * renderer.getPixelRatio(), window.innerHeight * renderer.getPixelRatio() );
+    var smaaPass = new SMAAPass(window.innerWidth * renderer.getPixelRatio(), window.innerHeight * renderer.getPixelRatio());
 
     renderPass.renderToScreen = false;
     smaaPass.renderToScreen = true;
@@ -172,9 +178,12 @@ function animate() {
 //
 
 // Event Listeners
-window.addEventListener('resize', onWindowResize, false);
-window.addEventListener('onmousemove', onMouseMove, false);
-window.addEventListener('click', onClick, false);
+
+function initEventListeners() {
+    window.addEventListener('resize', onWindowResize, false);
+    window.addEventListener('onmousemove', onMouseMove, false);
+    window.addEventListener('click', onClick, false);
+}
 
 //
 
@@ -204,7 +213,7 @@ function onMouseMove(e) {
 
 function onClick(e) {
     console.log("Camera Pos: " + camera.position.x + ", " + camera.position.y + ", " + camera.position.z)
-    console.log("Camera Looking: " + controls.target.x + ", " + controls.target.y + ", " + controls.target.z );
+    console.log("Camera Looking: " + controls.target.x + ", " + controls.target.y + ", " + controls.target.z);
 }
 
 //

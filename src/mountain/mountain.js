@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 
-import {SIZE, RESOLUTIONX, RESOLUTIONZ} from '../const.js'
+import {SIZE, RESOLUTIONX, RESOLUTIONZ, SNOWAMOUNT, MOUNTAINROUGHNESS} from '../const.js'
 
 //
 
@@ -43,7 +43,7 @@ export default class Mountain extends THREE.Mesh {
             displacementMap: textures.rockHeight,
             normalMap: textures.rockNormal,
             roughnessMap: textures.rockRoughness,
-            roughness: 0.7,
+            roughness: MOUNTAINROUGHNESS,
             // wireframe: true,
         });
 
@@ -86,7 +86,7 @@ export default class Mountain extends THREE.Mesh {
     
             // console.log(shader.fragmentShader);
     
-            shader.uniforms.snowAmount = { value: 0.3 };
+            shader.uniforms.snowAmount = { value: SNOWAMOUNT };
             shader.uniforms.snowTexture = { type: "t", value: textures.snow };
     
             shader.fragmentShader = (

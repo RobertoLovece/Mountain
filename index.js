@@ -13,6 +13,7 @@ import { FOGPARAMS, SNOWPARAMS } from './src/const.js'
 import {initGUI} from './src/GUI.js'
 import LoadTextures from './src/LoadTextures.js'
 import Mountain from './src/mountain/mountain.js'
+import Snow from './src/snow/snow.js'
 
 require('normalize.css/normalize.css');
 require("./src/css/index.css");
@@ -24,7 +25,7 @@ let scene, camera, renderer, composer;
 // general
 let container, stats, clock, controls, textures;
 // objects
-let mountain;
+let mountain, snow;
 // lights
 let hemiLight, spotLight;
 
@@ -46,7 +47,7 @@ window.onload = function () {
     // ensure textures are fully loaded
     Promise.all(promises).then(() => {
         initObjects();
-        initGUI(scene, mountain);
+        initGUI(scene, mountain, snow);
     
         initEventListeners();
         onWindowResize();
@@ -151,6 +152,8 @@ function initObjects() {
     mountain = new Mountain(textures);
     scene.add(mountain);
 
+    snow = new Snow();
+    scene.add(snow)
 }
 
 //
@@ -185,6 +188,7 @@ function animate() {
     );
 
     mountain.update(deltaTime);
+    snow.update(deltaTime);
 
     // renderer.render(scene, camera);
     composer.render(scene, camera);

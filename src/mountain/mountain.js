@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 
-import {SIZE, RESOLUTIONX, RESOLUTIONZ, FOGPARAMS, SNOWPARAMS, MOUNTAINROUGHNESS} from '../const.js';
+import {SIZE, RESOLUTIONX, RESOLUTIONZ, FOGPARAMS, SNOW, MOUNTAINROUGHNESS} from '../const.js';
 import { fogParsVert, fogVert, fogParsFrag, fogFrag } from '../fog/shader/fogShader.js';
 
 //
@@ -108,11 +108,11 @@ export default class Mountain extends THREE.Mesh {
 
             // snow
             
-            shader.uniforms.snowAmount = { value: SNOWPARAMS.snowAmount };
+            shader.uniforms.snowCoverage = { value: SNOW.snowCoverage };
             shader.uniforms.snowTexture = { type: "t", value: textures.snow };
     
             shader.fragmentShader = (
-                'uniform float snowAmount;\n' + 
+                'uniform float snowCoverage;\n' + 
                 'uniform sampler2D snowTexture;\n' + 
                 shader.fragmentShader
             );

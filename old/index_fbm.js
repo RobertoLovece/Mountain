@@ -6,7 +6,6 @@ import Stats from 'three/examples/jsm/libs/stats.module.js';
 
 require('normalize.css/normalize.css');
 require("../src/css/index.css");
-var seedrandom = require('seedrandom');
 
 //
 

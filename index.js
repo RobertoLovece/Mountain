@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import Stats from 'three/examples/jsm/libs/stats.module.js';
+import * as dat from 'three/examples/jsm/libs/dat.gui.module.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
 // composer
@@ -8,6 +9,8 @@ import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { SMAAPass } from 'three/examples/jsm/postprocessing/SMAAPass.js';
 
 // non libary js
+import { FOGPARAMS, SNOWPARAMS } from './src/const.js'
+import {initGUI} from './src/GUI.js'
 import LoadTextures from './src/LoadTextures.js'
 import Mountain from './src/mountain/mountain.js'
 
@@ -23,7 +26,7 @@ let container, stats, clock, controls, textures;
 // objects
 let mountain;
 // lights
-let hemiLight, directionalLight, spotLight;
+let hemiLight, spotLight;
 
 //
 
@@ -34,14 +37,16 @@ window.onload = function () {
     const promises = [textures.load()];
 
     initScene();
-    initLights();
     initPostProcessing();
+    initFog();
+    initLights();
     initControls();
     initStats();
 
     // ensure textures are fully loaded
     Promise.all(promises).then(() => {
         initObjects();
+        initGUI(scene, mountain);
     
         initEventListeners();
         onWindowResize();
@@ -80,6 +85,24 @@ function initScene() {
 
 //
 
+function initPostProcessing() {
+
+    composer = new EffectComposer(renderer);
+
+    var renderPass = new RenderPass(scene, camera);
+
+    var smaaPass = new SMAAPass(window.innerWidth * renderer.getPixelRatio(), window.innerHeight * renderer.getPixelRatio());
+
+    renderPass.renderToScreen = false;
+    smaaPass.renderToScreen = true;
+
+    composer.addPass(renderPass);
+    composer.addPass(smaaPass);
+
+}
+
+//
+
 function initLights() {
 
     renderer.toneMapping = THREE.ReinhardToneMapping;
@@ -98,21 +121,10 @@ function initLights() {
     scene.add(spotLight);
 }
 
-//
+function initFog() {
 
-function initPostProcessing() {
-
-    composer = new EffectComposer(renderer);
-
-    var renderPass = new RenderPass(scene, camera);
-
-    var smaaPass = new SMAAPass(window.innerWidth * renderer.getPixelRatio(), window.innerHeight * renderer.getPixelRatio());
-
-    renderPass.renderToScreen = false;
-    smaaPass.renderToScreen = true;
-
-    composer.addPass(renderPass);
-    composer.addPass(smaaPass);
+    scene.background = new THREE.Color(FOGPARAMS.fogHorizonColor);
+    scene.fog = new THREE.FogExp2(FOGPARAMS.fogHorizonColor, FOGPARAMS.fogDensity);
 
 }
 
@@ -162,6 +174,8 @@ function initControls() {
 function animate() {
     requestAnimationFrame(animate);
 
+    let deltaTime = clock.getDelta();
+
     stats.update();
 
     spotLight.position.set(
@@ -169,6 +183,8 @@ function animate() {
         camera.position.y + 1,
         camera.position.z + 1,
     );
+
+    mountain.update(deltaTime);
 
     // renderer.render(scene, camera);
     composer.render(scene, camera);

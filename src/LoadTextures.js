@@ -10,7 +10,7 @@ import RockRoughness from './mountain/texture/volcanic/roughness/Rock-Cliff-Volc
 
 //
 
-import Snow from './mountain/texture/snow/dunes/Snow-Dunes-1K.png';
+import Snow from './mountain/texture/mountain_snow/dunes/Snow-Dunes-1K.png';
 
 //
 

@@ -1,12 +1,13 @@
 import * as THREE from 'three';
 
-import {SIZE, RESOLUTIONX, RESOLUTIONZ, SNOWAMOUNT, MOUNTAINROUGHNESS} from '../const.js'
+import {SIZE, RESOLUTIONX, RESOLUTIONZ, FOGPARAMS, SNOWPARAMS, MOUNTAINROUGHNESS} from '../const.js';
+import { fogParsVert, fogVert, fogParsFrag, fogFrag } from '../fog/shader/fogShader.js';
 
 //
 
 import vertexShader from './shader/vertexShader.glsl';
 import defaultNormalVertex from './shader/defaultnormal_vertex.glsl';
-import mapFragment from './shader/map_fragment.glsl';
+import mapFragment from './shader/map_fragment.glsl'
 
 //
 
@@ -26,6 +27,8 @@ export default class Mountain extends THREE.Mesh {
 
     }
 
+    //
+
     initGeometry() {
 
         let geometry = new THREE.PlaneBufferGeometry(SIZE, SIZE, RESOLUTIONX, RESOLUTIONZ);
@@ -33,28 +36,26 @@ export default class Mountain extends THREE.Mesh {
         return geometry;
     }
 
+    //
+
     initMaterial(textures) {
 
         // rock, rockAO, rockHeight, rockNormal, rockRoughness 
         let material = new THREE.MeshStandardMaterial({
             side: THREE.FrontSide,
+            roughness: MOUNTAINROUGHNESS,
             map: textures.rock,
             aoMap: textures.rockAO,
             displacementMap: textures.rockHeight,
             normalMap: textures.rockNormal,
             roughnessMap: textures.rockRoughness,
-            roughness: MOUNTAINROUGHNESS,
-            // wireframe: true,
         });
 
         material.onBeforeCompile = shader => {
-
-            // for debugging uncomment the top and bottom logs to see what glsl is injected
-            // into the default planes shaders
-    
-            // vertex shader
     
             // console.log(shader.vertexShader)
+
+            // fbm
     
             // uniforms
             shader.uniforms.size = { value: SIZE };
@@ -79,14 +80,35 @@ export default class Mountain extends THREE.Mesh {
                 '#include <displacementmap_vertex>',
                 `transformed = displacedPosition;`
             )
+
+            // fog
+
+            shader.vertexShader = shader.vertexShader.replace(
+                '#include <fog_pars_vertex>',
+                fogParsVert
+            );
+            shader.vertexShader = shader.vertexShader.replace(
+                '#include <fog_vertex>',
+                fogVert
+            );
+            shader.fragmentShader = shader.fragmentShader.replace(
+                '#include <fog_pars_fragment>',
+                fogParsFrag
+            );
+            shader.fragmentShader = shader.fragmentShader.replace(
+                '#include <fog_fragment>',
+                fogFrag
+            );
     
-            // console.log(shader.vertexShader)
-    
-            // fragment shader
-    
-            // console.log(shader.fragmentShader);
-    
-            shader.uniforms.snowAmount = { value: SNOWAMOUNT };
+            shader.uniforms.fogNearColor = { value: new THREE.Color( FOGPARAMS.fogNearColor ) };
+            shader.uniforms.fogNoiseFreq = { value: FOGPARAMS.fogNoiseFreq };
+            shader.uniforms.fogNoiseSpeed = { value: FOGPARAMS.fogNoiseSpeed };
+            shader.uniforms.fogNoiseImpact = { value: FOGPARAMS.fogNoiseImpact };
+            shader.uniforms.time = { value: 0 };
+
+            // snow
+            
+            shader.uniforms.snowAmount = { value: SNOWPARAMS.snowAmount };
             shader.uniforms.snowTexture = { type: "t", value: textures.snow };
     
             shader.fragmentShader = (
@@ -99,12 +121,20 @@ export default class Mountain extends THREE.Mesh {
                 '#include <map_fragment>', 
                 mapFragment
             );
-    
-            // console.log(shader.fragmentShader);
+
+            this.terrainShader = shader;
     
         }
 
         return material;
 
+    }
+
+    //
+
+    update(deltaTime) {
+        if (this.terrainShader) {
+            this.terrainShader.uniforms.time.value += deltaTime;
+        }
     }
 }

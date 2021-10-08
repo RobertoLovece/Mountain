@@ -166,9 +166,8 @@ function initControls() {
     controls.enableZoom = true;
     controls.enableRotate = true;
 
-    // camera.lookAt(0, 0, 0);
-    controls.target = new THREE.Vector3(0, 1.1, 0);
-    camera.position.set(-0.7, 1.6, -0.3);
+    camera.position.set(-0.53, 1.6, -0.38);
+    controls.target = new THREE.Vector3(0.0, 1.15, 0.02);
 
 }
 

@@ -1,6 +1,5 @@
 import * as THREE from 'three';
 import Stats from 'three/examples/jsm/libs/stats.module.js';
-import * as dat from 'three/examples/jsm/libs/dat.gui.module.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
 // composer
@@ -9,8 +8,8 @@ import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { SMAAPass } from 'three/examples/jsm/postprocessing/SMAAPass.js';
 
 // non libary js
-import { FOGPARAMS, SNOWPARAMS } from './src/const.js'
-import {initGUI} from './src/GUI.js'
+import { FOGPARAMS } from './src/const.js'
+import { initGUI } from './src/GUI.js'
 import LoadTextures from './src/LoadTextures.js'
 import Mountain from './src/mountain/mountain.js'
 import Snow from './src/snow/snow.js'
@@ -23,11 +22,11 @@ require("./src/css/index.css");
 // scene
 let scene, camera, renderer, composer;
 // general
-let container, stats, clock, controls, textures;
+let container, stats, clock, controls;
 // objects
-let mountain, snow;
+let mountain, snow, textures;
 // lights
-let hemiLight, spotLight;
+let hemiLight, directionalLight, spotLight;
 
 //
 
@@ -47,7 +46,7 @@ window.onload = function () {
     // ensure textures are fully loaded
     Promise.all(promises).then(() => {
         initObjects();
-        initGUI(scene, mountain, snow);
+        initGUI(scene, composer, mountain, snow);
     
         initEventListeners();
         onWindowResize();
@@ -120,6 +119,17 @@ function initLights() {
     spotLight.shadow.bias = -0.0001;
     spotLight.shadow.mapSize = new THREE.Vector2(1024 * 2, 1024 * 2);
     scene.add(spotLight);
+
+    directionalLight = new THREE.DirectionalLight( 0xffa95c, 2 );
+    directionalLight.castShadow = true;
+    directionalLight.shadow.bias = -0.0001;
+    directionalLight.shadow.mapSize = new THREE.Vector2(1024 * 2, 1024 * 2);
+    
+    directionalLight.position.x = -0.5;
+    directionalLight.position.y = 0.5;
+    directionalLight.position.z = -1;
+    
+    // scene.add(directionalLight);
 }
 
 function initFog() {

@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import Particle from './particle.js';
-import {SIZE, HEIGHT, OFFSETX, OFFSETZ, NUMBEROFPARTICLES, SNOW} from '../const.js'
+import {SIZE, HEIGHT, OFFSETX, OFFSETZ, SNOW} from '../const.js'
 
 //
 

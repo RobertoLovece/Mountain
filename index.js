@@ -46,7 +46,7 @@ window.onload = function () {
     // ensure textures are fully loaded
     Promise.all(promises).then(() => {
         initObjects();
-        initGUI(scene, composer, mountain, snow);
+        initGUI(scene, mountain, snow);
     
         initEventListeners();
         onWindowResize();
@@ -143,8 +143,8 @@ function initFog() {
 
 function initStats() {
 
-    var axesHelper = new THREE.AxesHelper(5);
-    scene.add(axesHelper);
+    // var axesHelper = new THREE.AxesHelper(5);
+    // scene.add(axesHelper);
 
     stats = new Stats();
     document.body.appendChild(stats.dom);

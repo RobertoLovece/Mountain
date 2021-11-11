@@ -42,6 +42,7 @@ export default class Mountain extends THREE.Mesh {
 
         // rock, rockAO, rockHeight, rockNormal, rockRoughness 
         let material = new THREE.MeshStandardMaterial({
+            wireframe: true,
             side: THREE.FrontSide,
             roughness: MOUNTAINROUGHNESS,
             map: textures.rock,

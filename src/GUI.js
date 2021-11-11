@@ -3,7 +3,7 @@ import * as dat from 'three/examples/jsm/libs/dat.gui.module.js';
 
 import { FOGPARAMS, SNOW } from './const.js'
 
-export function initGUI(scene, composer, mountain, snow) {
+export function initGUI(scene, mountain, snow) {
 
     const gui = new dat.GUI();
     const fogFolder = gui.addFolder('Fog')

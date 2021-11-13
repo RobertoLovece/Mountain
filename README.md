@@ -8,8 +8,8 @@
 ## Overview
 
 - The mountain is procedurally generated using Fractional Brownian motion (https://en.wikipedia.org/wiki/Fractional_Brownian_motion) inside a vertex shader of a flat plane.
-- Due to the high amount of polygon to achieve a realistic product, it will have trouble running on low-end/older phones or computers
-- Because of the way the snow is generated on the terrain, moving the camera changes the position/effect of the snow
+- Due to the high amount of polygon to achieve a realistic product, it will have trouble running on low-end/older phones or computers.
+- Because of the way the snow is generated on the terrain, moving the camera changes the position/effect of the snow.
 
 ## Instructions
 

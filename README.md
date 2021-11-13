@@ -1,3 +1,3 @@
-# Three.js-Mountain
+# Mountain 🏔
 
-https://robertolovece.github.io/Three.js-Mountain/
+https://robertolovece.github.io/Mountain/

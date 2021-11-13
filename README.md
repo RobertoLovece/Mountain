@@ -13,7 +13,8 @@
 
 ## Instructions
 
-You can use the GUI to configure both the snow on the mountain as well as the snow fall and fog effect. The project also has Three.js OrbitControls to allow movement of the camera by dragging.
+- You can use the GUI to configure both the snow on the mountain as well as the snow fall and fog effect. 
+- The project also has Three.js OrbitControls to allow movement of the camera by dragging.
 
 ## Installation
 __Requires npm (https://www.npmjs.com/)__

@@ -18,7 +18,7 @@ module.exports = {
  	plugins: [
 		new HtmlWebpackPlugin({
 		  template: './index.html',
-		  favicon: './src/favicon.png',
+		  favicon: './src/mountain.png',
 		  inject: true,
 		  chunks: ['index'],
 		  filename: 'index.html'

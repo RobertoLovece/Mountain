@@ -9,7 +9,7 @@ export const RESOLUTIONZ = 256 * 2.0;
 export const FOGPARAMS = {
     fogNearColor: 0xF8F8FF ,
     fogHorizonColor: 0xD3D3D3 ,
-    fogDensity: 0.6,
+    fogDensity: 0.4,
     fogNoiseSpeed: 100,
     fogNoiseFreq: .0024,
     fogNoiseImpact: .5
@@ -18,7 +18,7 @@ export const FOGPARAMS = {
 export const MOUNTAINROUGHNESS = 0.7;
 
 export const SNOW = {
-    snowCoverage: 0.4,
+    snowCoverage: 0.32,
     numberOfParticles: 3000,
-    snowSize: 1.8,
+    snowSize: 1.0,
 };

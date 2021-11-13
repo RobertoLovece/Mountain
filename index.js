@@ -46,7 +46,7 @@ window.onload = function () {
     // ensure textures are fully loaded
     Promise.all(promises).then(() => {
         initObjects();
-        // initGUI(scene, mountain, snow);
+        initGUI(scene, mountain, snow);
     
         initEventListeners();
         onWindowResize();
@@ -146,8 +146,8 @@ function initStats() {
     // var axesHelper = new THREE.AxesHelper(5);
     // scene.add(axesHelper);
 
-    // stats = new Stats();
-    // document.body.appendChild(stats.dom);
+    stats = new Stats();
+    document.body.appendChild(stats.dom);
 
     clock = new THREE.Clock();
 
@@ -188,7 +188,7 @@ function animate() {
 
     let deltaTime = clock.getDelta();
 
-    // stats.update();
+    stats.update();
 
     spotLight.position.set(
         camera.position.x + 1,
